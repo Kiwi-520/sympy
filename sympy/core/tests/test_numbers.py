@@ -2333,3 +2333,28 @@ def test_all_close():
     assert not all_close(x + exp(2.*x)*y, 1.*x + 2*exp(2*x)*y)
     assert not all_close(x + exp(2.*x)*y, 1.*x + exp(3*x)*y)
     assert not all_close(x + 2.*y, 1.*x + 3*y)
+
+def test_issue_19988_Float_pickle_precision():
+    # Test that Float preserves precision through pickle round-trip.
+    # Regression test for https://github.com/sympy/sympy/issues/19988
+    import pickle
+    from sympy import Float, pi
+    # Test with 100 decimal digits precision
+    original = Float(pi, dps=100)
+    unpickled = pickle.loads(pickle.dumps(original))
+    assert original._prec == unpickled._prec
+    assert original == unpickled
+    # Verifying it's actually high precision (not defaulting to 53 bits)
+    assert unpickled._prec > 53
+    # String representation should match
+    assert str(original) == str(unpickled)
+    original_bits = Float(pi, precision=200)
+    unpickled_bits = pickle.loads(pickle.dumps(original_bits))
+    # Test with explicit binary precision
+    assert original_bits._prec == unpickled_bits._prec
+    assert original_bits == unpickled_bits
+    # Test with lower precision to ensure it works for all cases
+    original_low = Float(pi, dps=5)
+    unpickled_low = pickle.loads(pickle.dumps(original_low))
+    assert original_low._prec == unpickled_low._prec
+    assert original_low == unpickled_low
